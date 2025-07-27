@@ -67,9 +67,9 @@ df['eq_tr_real'] = ((1 + df['eq_tr']) / (1 + df['inflation'])) - 1
 def forward_avg_return(series, window):
     series = np.log1p(series)
     rev = series[::-1]
-    return np.expm1(rev.rolling(window=window, min_periods=window).mean()[::-1])
+    return rev.rolling(window=window, min_periods=window).mean()[::-1]
 
-df['fwd_avg_tr'] = df.groupby('country')['eq_tr_real'].transform(lambda x: forward_avg_return(x, m))
+df['fwd_log_avg_tr'] = df.groupby('country')['eq_tr_real'].transform(lambda x: forward_avg_return(x, m))
 
 # === trims values beyond the a and (1 - a) percentile ===
 def trim_outliers(series, a):
@@ -79,25 +79,25 @@ def trim_outliers(series, a):
 
 
 # === Compute forward real dividend growth over m years ===
-df['fwd_real_div_growth'] = df.groupby('country')['div_real'].transform(
-    lambda x: (x.shift(-m) / x) ** (1 / m) - 1
+df['fwd_log_real_div_growth'] = df.groupby('country')['div_real'].transform(
+    lambda x: (np.log(x.shift(-m)) - np.log(x)) * (1 / m)
 )
 
 # === Compute forward average inflation ===
-df['fwd_avg_inf'] = df.groupby('country')['inflation'].transform(lambda x: forward_avg_return(x, m))
-df['fwd_avg_inf'] = trim_outliers(df['fwd_avg_inf'], 0.01)
+df['fwd_log_avg_inf'] = df.groupby('country')['inflation'].transform(lambda x: forward_avg_return(x, m))
+df['fwd_log_avg_inf'] = trim_outliers(df['fwd_log_avg_inf'], 0.01)
 
 # === Clean dataset for regression ===
 df = df.replace([np.inf, -np.inf], np.nan)
 
 # === Define dependent and independent variables ===
-independent_vars = ['fwd_real_div_growth', 'dp_log_lag1', 'fwd_avg_inf']
-dependent_var = 'fwd_avg_tr'
+independent_vars = ['fwd_log_real_div_growth', 'dp_log_lag1', 'fwd_log_avg_inf']
+dependent_var = 'fwd_log_avg_tr'
 
 var_labels = {
-    'fwd_real_div_growth': 'Fwd Real Dividend Growth',
+    'fwd_log_real_div_growth': f'{m}-Year Fwd Log Real Dividend Growth',
     'dp_log_lag1': 'Smoothed and Lagged Log D/P',
-    'fwd_avg_inf': 'Fwd Avg Inflation'
+    'fwd_log_avg_inf': f'{m}-Year Fwd Log Avg Inflation'
 }
 
 # === Select non-overlapping m-year intervals ===
@@ -112,7 +112,7 @@ mask = df_reg['country'] == highlight_country
 
 for ind_var in independent_vars:
     x = sm.add_constant(df_reg[ind_var])
-    y = df_reg['fwd_avg_tr']
+    y = df_reg['fwd_log_avg_tr']
     
     model = sm.OLS(y, x).fit()
     print(model.summary())
@@ -123,8 +123,8 @@ for ind_var in independent_vars:
     plt.plot(df_reg[ind_var], model.predict(x), color='red', label='OLS Fit')
 
     plt.xlabel(var_labels[ind_var])
-    plt.ylabel('Forward Avg Real Equity Return')
-    plt.title(f'Forward Avg Real Equity Return vs. {var_labels[ind_var]}')
+    plt.ylabel(f'{m}-Year Fwd Log Avg Real Equity Return')
+    plt.title(f'{m}-Year Fwd Log Avg Real Equity Return vs. {var_labels[ind_var]}')
 
     plt.legend()
     plt.tight_layout()
@@ -132,7 +132,7 @@ for ind_var in independent_vars:
 
 # === Regress D/P ratio on dividend growth to show lack of predictability ===
 x = sm.add_constant(df_reg['dp_log_lag1'])
-y = df_reg['fwd_real_div_growth']
+y = df_reg['fwd_log_real_div_growth']
 model = sm.OLS(y, x).fit()
 print(model.summary())
 
@@ -141,8 +141,8 @@ plt.scatter(df_reg['dp_log_lag1'], y, color='gray', alpha=0.4, label='Data')
 plt.plot(df_reg['dp_log_lag1'], model.predict(x), color='red', label='OLS Fit')
 
 plt.xlabel('Smoothed and Lagged Log D/P')
-plt.ylabel('Fwd Real Dividend Growth')
-plt.title('Fwd Real Dividend Growth vs. Smoothed and Lagged Log D/P')
+plt.ylabel(f'{m}-Year Fwd Log Real Dividend Growth')
+plt.title(f'{m}-Year Fwd Log Real Dividend Growth vs. Smoothed and Lagged Log D/P')
 
 plt.legend()
 plt.tight_layout()
@@ -150,7 +150,7 @@ plt.show()
 
 # === Run multi-variable regression ===
 x = sm.add_constant(df_reg[independent_vars])
-y = df_reg['fwd_avg_tr']
+y = df_reg['fwd_log_avg_tr']
 model = sm.OLS(y, x).fit()
 print(model.summary())
 
@@ -162,9 +162,9 @@ plt.scatter(y[~mask], y_pred[~mask], color='gray', alpha=0.4, label='Other Count
 plt.scatter(y[mask], y_pred[mask], color='green', alpha=0.8, label=highlight_country)
 plt.plot([y.min(), y.max()], [y.min(), y.max()], 'r--', label='Perfect Fit')
 
-plt.xlabel('Actual Forward Average Return')
-plt.ylabel('Predicted Forward Average Return')
-plt.title('Actual vs. Predicted Returns')
+plt.xlabel(f'Actual {m}-Year Fwd Log Avg Return')
+plt.ylabel(f'Predicted {m}-Year Fwd Log Avg Return')
+plt.title(f'Actual vs. Predicted {m}-Year Fwd Avg Log Returns')
 
 plt.legend()
 plt.tight_layout()

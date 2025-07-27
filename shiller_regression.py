@@ -98,7 +98,7 @@ df['eq_er_usd_unhedged_real'] = df['eq_er_usd_unhedged_nom'] / df['us_inflation'
 def forward_avg_return(series, window):
     series = np.log1p(series)
     rev = series[::-1]
-    return np.expm1(rev.rolling(window=window, min_periods=window).mean()[::-1])
+    return rev.rolling(window=window, min_periods=window).mean()[::-1]
 
 # === Compute m-year forward average returns ===
 return_cols = [
@@ -111,30 +111,30 @@ return_cols = [
 ]
 
 for col in return_cols:
-    new_col = f'{col}_fwd{m}'
+    new_col = f'log_{col}_fwd{m}'
     df[new_col] = df.groupby('country')[col].transform(lambda x: forward_avg_return(x, m))
 
 # === Select non-overlapping m-year intervals ===
 df = df[df['year'] % m == 0]
 
 # === Drop rows with missing lagged dp_log or forward returns ===
-df_reg = df.dropna(subset=['dp_log_lag1'] + [f'{col}_fwd{m}' for col in return_cols])
+df_reg = df.dropna(subset=['dp_log_lag1'] + [f'log_{col}_fwd{m}' for col in return_cols])
 
 # === Run regressions and plot ===
 fig, axes = plt.subplots(2, 3, figsize=(18, 10), constrained_layout=True)
 axes = axes.flatten()
 
 titles = {
-    'eq_er_local_nom': 'Nominal Local Excess Return',
-    'eq_er_usd_hedged_nom': 'Nominal USD-Hedged Excess Return',
-    'eq_er_usd_unhedged_nom': 'Nominal USD-Unhedged Excess Return',
-    'eq_er_local_real': 'Real Local Excess Return',
-    'eq_er_usd_hedged_real': 'Real USD-Hedged Excess Return',
-    'eq_er_usd_unhedged_real': 'Real USD-Unhedged Excess Return',
+    'eq_er_local_nom': 'Nominal Local Log Excess Return',
+    'eq_er_usd_hedged_nom': 'Nominal USD-Hedged Log Excess Return',
+    'eq_er_usd_unhedged_nom': 'Nominal USD-Unhedged Log Excess Return',
+    'eq_er_local_real': 'Real Local Log Excess Return',
+    'eq_er_usd_hedged_real': 'Real USD-Hedged Log Excess Return',
+    'eq_er_usd_unhedged_real': 'Real USD-Unhedged Log Excess Return',
 }
 
 for i, col in enumerate(return_cols):
-    fwd_col = f'{col}_fwd{m}'
+    fwd_col = f'log_{col}_fwd{m}'
     X = sm.add_constant(df_reg['dp_log_lag1'])
     y = df_reg[fwd_col]
     
@@ -146,7 +146,7 @@ for i, col in enumerate(return_cols):
 
     ax.set_title(f'{titles[col]}', fontsize=11)
     ax.set_xlabel('Lagged log(D/P)', labelpad=8)
-    ax.set_ylabel(f'{m}-Year Avg Return', labelpad=8)
+    ax.set_ylabel(f'{m}-Year Log Avg Return', labelpad=8)
     ax.legend(fontsize=8)
     
     # === Print regression results to console ===
