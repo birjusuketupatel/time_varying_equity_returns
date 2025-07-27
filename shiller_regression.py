@@ -114,6 +114,9 @@ for col in return_cols:
     new_col = f'{col}_fwd{m}'
     df[new_col] = df.groupby('country')[col].transform(lambda x: forward_avg_return(x, m))
 
+# === Select non-overlapping m-year intervals ===
+df = df[df['year'] % m == 0]
+
 # === Drop rows with missing lagged dp_log or forward returns ===
 df_reg = df.dropna(subset=['dp_log_lag1'] + [f'{col}_fwd{m}' for col in return_cols])
 

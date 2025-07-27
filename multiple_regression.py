@@ -9,7 +9,7 @@ import matplotlib.patches as mpatches
 n = 10                      # lookback for calculating D/P smoothing
 m = 10                      # lookahead for calculating average forward return
 countries_to_include = []   # include only countries in this list, if empty include all
-highlight_country = 'USA'   # highlight this country's data in the scatter plots
+highlight_country = 'Australia'   # highlight this country's data in the scatter plots
 
 # === Load and prepare dataset ===
 df = pd.read_csv("JSTdatasetR6.csv")
@@ -106,7 +106,7 @@ df = df[df['year'] % m == 0]
 # === Drop NaN values ===
 df_reg = df.dropna(subset=[dependent_var, 'country'] + independent_vars)
 
-# === Run one-variable regressions individually ===
+# === Run one-variable regressions on forward returns individually ===
 mask = df_reg['country'] == highlight_country
 
 for ind_var in independent_vars:
@@ -128,6 +128,24 @@ for ind_var in independent_vars:
     plt.legend()
     plt.tight_layout()
     plt.show()
+
+# === Regress D/P ratio on dividend growth to show lack of predictability ===
+x = sm.add_constant(df_reg['dp_log_lag1'])
+y = df_reg['fwd_real_div_growth']
+model = sm.OLS(y, x).fit()
+print(model.summary())
+
+plt.figure()
+plt.scatter(df_reg['dp_log_lag1'], y, color='gray', alpha=0.4, label='Data')
+plt.plot(df_reg['dp_log_lag1'], model.predict(x), color='red', label='OLS Fit')
+
+plt.xlabel('Smoothed and Lagged Log D/P')
+plt.ylabel('Fwd Real Dividend Growth')
+plt.title('Fwd Real Dividend Growth vs. Smoothed and Lagged Log D/P')
+
+plt.legend()
+plt.tight_layout()
+plt.show()
 
 # === Run multi-variable regression ===
 x = sm.add_constant(df_reg[independent_vars])
