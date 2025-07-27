@@ -103,8 +103,9 @@ var_labels = {
 # === Select non-overlapping m-year intervals ===
 df = df[df['year'] % m == 0]
 
-# === Drop NaN values ===
+# === Drop unecessary values ===
 df_reg = df.dropna(subset=[dependent_var, 'country'] + independent_vars)
+df_reg = df_reg[['country', 'year', dependent_var] + independent_vars]
 
 # === Run one-variable regressions on forward returns individually ===
 mask = df_reg['country'] == highlight_country
@@ -168,3 +169,6 @@ plt.title('Actual vs. Predicted Returns')
 plt.legend()
 plt.tight_layout()
 plt.show()
+
+# === Save data to csv ===
+df_reg.to_csv('regression_raw_data.csv', index=False)
