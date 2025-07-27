@@ -28,7 +28,7 @@ def build_index_with_gaps(data, return_col, index_col):
 df = build_index_with_gaps(df, 'eq_tr_real', 'real_eq_tr_index')
 
 # === Select country to analyze ===
-selected_country = 'Portugal'
+selected_country = 'Sweden'
 df_country = df[df['country'] == selected_country].copy()
 
 # === Plot real total return index over time ===

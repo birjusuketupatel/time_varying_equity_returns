@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import statsmodels.api as sm
 from scipy.stats.mstats import winsorize
 import matplotlib.patches as mpatches
+import pickle
 
 # === Define parameters ===
 n = 10                      # lookback for calculating D/P smoothing
@@ -172,3 +173,7 @@ plt.show()
 
 # === Save data to csv ===
 df_reg.to_csv('regression_raw_data.csv', index=False)
+
+# === Save OLS model to be used by other scripts ===
+with open('return_multivar_ols_model.pkl', 'wb') as f:
+    pickle.dump(model, f)
