@@ -9,6 +9,7 @@ import matplotlib.patches as mpatches
 n = 10                      # lookback for calculating D/P smoothing
 m = 10                      # lookahead for calculating average forward return
 countries_to_include = []   # include only countries in this list, if empty include all
+highlight_country = 'USA'   # highlight this country's data in the scatter plots
 
 # === Load and prepare dataset ===
 df = pd.read_csv("JSTdatasetR6.csv")
@@ -81,41 +82,31 @@ def trim_outliers(series, a):
 df['fwd_real_div_growth'] = df.groupby('country')['div_real'].transform(
     lambda x: (x.shift(-m) / x) ** (1 / m) - 1
 )
-df['fwd_real_div_growth'] = trim_outliers(df['fwd_real_div_growth'], 0.01)
 
 # === Compute forward average inflation ===
 df['fwd_avg_inf'] = df.groupby('country')['inflation'].transform(lambda x: forward_avg_return(x, m))
 df['fwd_avg_inf'] = trim_outliers(df['fwd_avg_inf'], 0.01)
 
-# === compute forward change in long rates ===
-df['ltrate'] = df['ltrate'] / 100
-
-df['fwd_ltrate_growth'] = df.groupby('country')['ltrate'].transform(
-    lambda x: (x.shift(-m) / x) ** (1 / m) - 1
-)
-
-# === clean dataset for regression ===
+# === Clean dataset for regression ===
 df = df.replace([np.inf, -np.inf], np.nan)
 
 # === Define dependent and independent variables ===
-independent_vars = ['fwd_real_div_growth', 'dp_log_lag1', 'fwd_ltrate_growth', 'fwd_avg_inf']
+independent_vars = ['fwd_real_div_growth', 'dp_log_lag1', 'fwd_avg_inf']
 dependent_var = 'fwd_avg_tr'
 
 var_labels = {
     'fwd_real_div_growth': 'Fwd Real Dividend Growth',
     'dp_log_lag1': 'Smoothed and Lagged Log D/P',
-    'fwd_ltrate_growth': 'Fwd Long-Term Interest Rate Growth',
     'fwd_avg_inf': 'Fwd Avg Inflation'
 }
 
 # === Select non-overlapping m-year intervals ===
-#df = df[df['year'] % m == 0]
+df = df[df['year'] % m == 0]
 
-# === Clean dataset for regressions ===
+# === Drop NaN values ===
 df_reg = df.dropna(subset=[dependent_var, 'country'] + independent_vars)
 
 # === Run one-variable regressions individually ===
-highlight_country = 'UK'
 mask = df_reg['country'] == highlight_country
 
 for ind_var in independent_vars:
