@@ -13,9 +13,6 @@ benchmark_country = "USA"
 df = pd.read_csv("JSTdatasetR6.csv")
 df = df.sort_values(['country', 'year'])
 
-# === Restrict to pre-buyback period ===
-#df = df[df['year'] < 1995]
-
 # === Drop rows where smoothed log(D/P) cannot be computed ===
 required_cols = ['eq_capgain', 'eq_dp', 'cpi']
 df = df.dropna(subset=required_cols)
