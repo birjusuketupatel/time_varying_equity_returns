@@ -5,6 +5,8 @@ import statsmodels.api as sm
 from scipy.stats.mstats import winsorize
 import matplotlib.patches as mpatches
 import pickle
+import seaborn as sns
+from scipy.stats import ttest_ind, levene
 
 # === Define parameters ===
 n = 10                      # lookback for calculating D/P smoothing
@@ -131,24 +133,6 @@ for ind_var in independent_vars:
     plt.tight_layout()
     plt.show()
 
-# === Regress D/P ratio on dividend growth to show lack of predictability ===
-x = sm.add_constant(df_reg['dp_log_lag1'])
-y = df_reg['fwd_log_real_div_growth']
-model = sm.OLS(y, x).fit()
-print(model.summary())
-
-plt.figure()
-plt.scatter(df_reg['dp_log_lag1'], y, color='gray', alpha=0.4, label='Data')
-plt.plot(df_reg['dp_log_lag1'], model.predict(x), color='red', label='OLS Fit')
-
-plt.xlabel('Smoothed and Lagged Log D/P')
-plt.ylabel(f'{m}-Year Fwd Log Real Dividend Growth')
-plt.title(f'{m}-Year Fwd Log Real Dividend Growth vs. Smoothed and Lagged Log D/P')
-
-plt.legend()
-plt.tight_layout()
-plt.show()
-
 # === Run multi-variable regression ===
 x = sm.add_constant(df_reg[independent_vars])
 y = df_reg['fwd_log_avg_tr']
@@ -170,6 +154,49 @@ plt.title(f'Actual vs. Predicted {m}-Year Fwd Avg Log Returns')
 plt.legend()
 plt.tight_layout()
 plt.show()
+
+# === Show that D/P ratio lacks predictive power on dividend growth ===
+dp_median = df_reg['dp_log_lag1'].median()
+high_dp = df_reg[df_reg['dp_log_lag1'] > dp_median]['fwd_log_real_div_growth'].dropna()
+low_dp = df_reg[df_reg['dp_log_lag1'] <= dp_median]['fwd_log_real_div_growth'].dropna()
+
+plt.figure(figsize=(10, 6))
+sns.histplot(high_dp, color='blue', kde=True, stat='density', label='Above-Median D/P', alpha=0.6, bins=30)
+sns.histplot(low_dp, color='orange', kde=True, stat='density', label='Below-Median D/P', alpha=0.6, bins=30)
+
+plt.title(f'Distribution of Fwd {m}-Yr Log Real Dividend Growth\nHigh vs. Low Lagged Log D/P')
+plt.xlabel(f'{m}-Year Forward Log Real Dividend Growth')
+plt.ylabel('Density')
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+# === Statistical tests ===
+t_stat, t_pval = ttest_ind(high_dp, low_dp, equal_var=False)
+w_stat, w_pval = levene(high_dp, low_dp)
+
+print("\n=== Statistical Tests: Dividend Growth (High vs. Low D/P) ===")
+print(f"Levene’s Test for Equal Variance: W = {w_stat:.4f}, p = {w_pval:.4f}")
+print(f"t-Test for Difference in Means:   t = {t_stat:.4f}, p = {t_pval:.4f}\n")
+
+# === Regress D/P ratio on dividend growth ===
+x = sm.add_constant(df_reg['dp_log_lag1'])
+y = df_reg['fwd_log_real_div_growth']
+model = sm.OLS(y, x).fit()
+print(model.summary())
+
+plt.figure()
+plt.scatter(df_reg['dp_log_lag1'], y, color='gray', alpha=0.4, label='Data')
+plt.plot(df_reg['dp_log_lag1'], model.predict(x), color='red', label='OLS Fit')
+
+plt.xlabel('Smoothed and Lagged Log D/P')
+plt.ylabel(f'{m}-Year Fwd Log Real Dividend Growth')
+plt.title(f'{m}-Year Fwd Log Real Dividend Growth vs. Smoothed and Lagged Log D/P')
+
+plt.legend()
+plt.tight_layout()
+plt.show()
+
 
 # === Save data to csv ===
 df_reg.to_csv('regression_raw_data.csv', index=False)

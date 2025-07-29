@@ -17,7 +17,7 @@ dp_log = np.log(dp)
 fwd_log_avg_inf = np.log(1 + inf)
 
 # === Create schedule of assumed 10-year forward average returns (real space) ===
-fwd_avg_returns = np.arange(0.00, 0.155, 0.025)
+fwd_avg_returns = np.arange(0.00, 0.155, 0.01)
 fwd_log_avg_trs = np.log1p(fwd_avg_returns)
 
 # === Solve for required log dividend growth that makes model prediction match assumed returns ===
@@ -40,5 +40,8 @@ result_df = pd.DataFrame({
 })
 
 # === Display ===
+print("Current Shareholder Yield: {:.2f}%".format(dp * 100))
+print("Inflation Forecast: {:.2f}%".format(inf * 100))
+
 print("\nRequired Dividend Growth Schedule:\n")
 print(result_df.to_string(index=False))
