@@ -155,6 +155,10 @@ plt.legend()
 plt.tight_layout()
 plt.show()
 
+# === Save OLS model to be used by other scripts ===
+with open('return_multivar_ols_model.pkl', 'wb') as f:
+    pickle.dump(model, f)
+
 # === Show that D/P ratio lacks predictive power on dividend growth ===
 dp_median = df_reg['dp_log_lag1'].median()
 high_dp = df_reg[df_reg['dp_log_lag1'] > dp_median]['fwd_log_real_div_growth'].dropna()
@@ -200,7 +204,3 @@ plt.show()
 
 # === Save data to csv ===
 df_reg.to_csv('regression_raw_data.csv', index=False)
-
-# === Save OLS model to be used by other scripts ===
-with open('return_multivar_ols_model.pkl', 'wb') as f:
-    pickle.dump(model, f)

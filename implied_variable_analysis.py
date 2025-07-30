@@ -9,8 +9,8 @@ with open('return_multivar_ols_model.pkl', 'rb') as f:
 print(model.summary())
 
 # === Hardcoded inputs (real space) ===
-dp = 0.0241    # dividend-price ratio
-inf = 0.0228   # expected annual inflation
+dp = 1    # dividend-price ratio
+inf = 0.0   # expected annual inflation
 
 # === Convert to log space (for model input) ===
 dp_log = np.log(dp)
