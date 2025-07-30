@@ -12,7 +12,7 @@ from scipy.stats import ttest_ind, levene
 n = 10                      # lookback for calculating D/P smoothing
 m = 10                      # lookahead for calculating average forward return
 countries_to_include = []   # include only countries in this list, if empty include all
-highlight_country = 'Australia'   # highlight this country's data in the scatter plots
+highlight_country = 'USA'   # highlight this country's data in the scatter plots
 
 # === Load and prepare dataset ===
 df = pd.read_csv("JSTdatasetR6.csv")
